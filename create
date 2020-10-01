@@ -36,6 +36,9 @@ else
 	cd $BaseFolderPath
 	mkdir $1
 	cd $1
+
+	gh repo create 
+
 	touch README.md
 	#TODO: Create GitHub Repo
 fi
