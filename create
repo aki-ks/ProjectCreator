@@ -1,0 +1,42 @@
+#!/bin/bash
+
+BaseFolderPath="/Users/Ruben/Coding/Projects/"
+
+while test $# -gt 1; do
+  case "$1" in
+    -h|--help)
+		echo "Welcome to the help page!"
+		# TODO: Add help overview
+        exit 0
+        ;;
+	-p|--public)
+	  	shift
+		echo "public"
+      	;;
+  esac
+done
+
+# Check if Directory where BaseFolderPath leads to exists
+if [ -d "$BaseFolderPath" ]
+then
+	echo "BaseFolderPath Directory exists. All cool!"
+else
+	echo "ERROR: Directory $BaseFolderPath doesn't exist."
+	echo "Stopping programm..."
+	exit 1
+fi
+
+if [ -d "$BaseFolderPath/$1" ] 
+then
+    echo "ERROR: Directory $BaseFolderPath/$1  already exists."
+	echo "Stopping programm..."
+	exit 1 
+else
+    echo "Creating Folder $1 in $BaseFolderPath"
+	cd $BaseFolderPath
+	mkdir $1
+	cd $1
+	touch README.md
+	#TODO: Create GitHub Repo
+fi
+
