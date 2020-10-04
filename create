@@ -76,7 +76,7 @@ select yn in "Yes" "No"; do
     esac
 done
 
-header="{\"name\":\"$1\", "description": "Some message", "homepage": "https://github.com", "private": $public}"
+header="{\"name\":\"$1\",\"description\": \"Some message\", \"homepage\": \"https://github.com\", \"private\": $public}"
 echo "$header"
 response=$(curl -H "Authorization: token $token" --data $header https://api.github.com/user/repos --silent --output /dev/null --write-out '%{http_code}')
 
