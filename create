@@ -54,28 +54,29 @@ if [ -z ${username+x} ]; then printError "username is unset"; else printOK "user
 # Check if Directory where BaseFolderPath leads to exists
 if [ -d "$BaseFolderPath" ]
 then
-	printOK "BaseFolderPath Directory exists. All cool!"
+	printOK "BaseFolderPath Directory exists"
 else
-	printError "ERROR: Directory $BaseFolderPath doesn't exist."
+	printError "Directory $BaseFolderPath doesn't exist."
 	echo "Stopping programm..."
 	exit 1
 fi
 
 if [ -d "$BaseFolderPath/$1" ] 
 then
-    printError "ERROR: Directory $BaseFolderPath/$1  already exists."
+    printError "Directory $BaseFolderPath$1 already exists."
 	echo "Stopping programm..."
 	exit 1 
 fi
 
-
 echo "Do you want to make this GitHub Repository private? (yes/no)"
-echo "$public"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) echo "Repository will be private."; public=false; break;;
+        No ) echo "Repository will be public."; public=true; break;;
+    esac
+done
 
-echo "Creating Folder $1 in $BaseFolderPath"
-cd $BaseFolderPath
-
-header="{\"name\":\"$1\"}"
+header="{\"name\":\"$1\", "description": "Some message", "homepage": "https://github.com", "private": $public}"
 echo "$header"
 response=$(curl -H "Authorization: token $token" --data $header https://api.github.com/user/repos --silent --output /dev/null --write-out '%{http_code}')
 
@@ -87,6 +88,17 @@ then
 	exit 1
 else
 	printOK "GitHub login successfull."
+fi
+
+# Check if a repo with the same name exists already
+if [ $response -eq 422 ]
+then
+	printError "There exists already a repository with the name $1."
+	echo "Stopping programm..."
+	# TODO: add option to clone this repo or not
+	exit 1
+else
+	printOK "Repository created."
 fi
 
 echo "${response}"
