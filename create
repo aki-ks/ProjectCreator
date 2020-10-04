@@ -1,8 +1,42 @@
 #!/bin/bash
 
-#BaseFolderPath="/Users/Ruben/Coding/Projects/"
+# Author: Ruben Hönle
+# GitHub: https://github.com/rubenhoenle/ProjectCreator
+# Date: 01.10.2020
 
-. config.conf
+CONFIGFILE=config.conf
+
+# some colour variables for the output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NOCOLOR='\033[0m'
+
+function printOK {
+	echo -e "[${GREEN}OK${NOCOLOR}] $1"
+}
+
+function printError {
+	echo -e "[${RED}ERROR${NOCOLOR}] $1"
+}
+
+# Check if config file exists, else exit script
+if [ -f "$CONFIGFILE" ]; then
+    printOK "Config file was found. $CONFIGFILE exists."
+else 
+    printError "$CONFIGFILE does not exist."
+	echo "Stopping programm..."
+	exit 1
+fi
+
+# Read variables from config file
+. $CONFIGFILE
+
+# Check if variables from config file are set
+if [ -z ${BaseFolderPath+x} ]; then printError "BaseFolderPath is unset"; else printOK "BaseFolderPath is set to '$BaseFolderPath'"; fi
+if [ -z ${username+x} ]; then printError "username is unset"; else printOK "username is set to '$username'"; fi
+#if [ -z ${token+x} ]; then printError "token is unset"; else printOK "token is set to '$token'"; fi
+
+exit 1
 
 while test $# -gt 1; do
   case "$1" in
@@ -39,14 +73,16 @@ else
 
     echo "Creating Folder $1 in $BaseFolderPath"
 	cd $BaseFolderPath
-	mkdir $1
-	cd $1
+	#mkdir $1
+	#cd $1
 
 	header="{\"name\":\"$1\"}"
 	echo "$header"
 	response=$(curl -H "Authorization: token $token" --data $header https://api.github.com/user/repos --silent --output /dev/null)
 
 	git clone https://github.com/$username/$1.git 
+
+	cd $1
 
 	touch README.md
 	touch .gitignore
