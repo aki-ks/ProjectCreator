@@ -11,6 +11,21 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NOCOLOR='\033[0m'
 
+# Handle given flags
+while test $# -gt 1; do
+  case "$1" in
+    -h|--help)
+		echo "Welcome to the help page!"
+		# TODO: Add help overview
+        exit 0
+        ;;
+	-p|--public)
+	  	shift
+		echo "public"
+      	;;
+  esac
+done
+
 function printOK {
 	echo -e "[${GREEN}OK${NOCOLOR}] $1"
 }
@@ -36,60 +51,50 @@ if [ -z ${BaseFolderPath+x} ]; then printError "BaseFolderPath is unset"; else p
 if [ -z ${username+x} ]; then printError "username is unset"; else printOK "username is set to '$username'"; fi
 #if [ -z ${token+x} ]; then printError "token is unset"; else printOK "token is set to '$token'"; fi
 
-exit 1
-
-while test $# -gt 1; do
-  case "$1" in
-    -h|--help)
-		echo "Welcome to the help page!"
-		# TODO: Add help overview
-        exit 0
-        ;;
-	-p|--public)
-	  	shift
-		echo "public"
-      	;;
-  esac
-done
-
 # Check if Directory where BaseFolderPath leads to exists
 if [ -d "$BaseFolderPath" ]
 then
-	echo "BaseFolderPath Directory exists. All cool!"
+	printOK "BaseFolderPath Directory exists. All cool!"
 else
-	echo "ERROR: Directory $BaseFolderPath doesn't exist."
+	printError "ERROR: Directory $BaseFolderPath doesn't exist."
 	echo "Stopping programm..."
 	exit 1
 fi
 
 if [ -d "$BaseFolderPath/$1" ] 
 then
-    echo "ERROR: Directory $BaseFolderPath/$1  already exists."
+    printError "ERROR: Directory $BaseFolderPath/$1  already exists."
 	echo "Stopping programm..."
 	exit 1 
-else
-	echo "Do you want to make this GitHub Repository private? (yes/no)"
-	echo "$public"
-
-    echo "Creating Folder $1 in $BaseFolderPath"
-	cd $BaseFolderPath
-	#mkdir $1
-	#cd $1
-
-	header="{\"name\":\"$1\"}"
-	echo "$header"
-	response=$(curl -H "Authorization: token $token" --data $header https://api.github.com/user/repos --silent --output /dev/null)
-
-	git clone https://github.com/$username/$1.git 
-
-	cd $1
-
-	touch README.md
-	touch .gitignore
-	git add README.md
-	git add .gitignore
-	git commit -a -m "Initial commit"
-
-	git push
 fi
 
+
+echo "Do you want to make this GitHub Repository private? (yes/no)"
+echo "$public"
+
+echo "Creating Folder $1 in $BaseFolderPath"
+cd $BaseFolderPath
+
+header="{\"name\":\"$1\"}"
+echo "$header"
+response=$(curl -H "Authorization: token $token" --data $header https://api.github.com/user/repos --silent --output /dev/null --write-out '%{http_code}')
+
+# Check if Login credentials are wrong
+if [ $response -eq 401 ]
+then
+	printError "Unable to login with the GitHub login credentials from the config file."
+	echo "Stopping programm..."
+	exit 1
+else
+	printOK "GitHub login successfull."
+fi
+
+echo "${response}"
+git clone https://github.com/$username/$1.git 
+cd $1
+touch README.md
+touch .gitignore
+git add README.md
+git add .gitignore
+git commit -a -m "Initial commit"
+git push
