@@ -1,6 +1,8 @@
 #!/bin/bash
 
-BaseFolderPath="/Users/Ruben/Coding/Projects/"
+#BaseFolderPath="/Users/Ruben/Coding/Projects/"
+
+. config.conf
 
 while test $# -gt 1; do
   case "$1" in
@@ -32,14 +34,26 @@ then
 	echo "Stopping programm..."
 	exit 1 
 else
+	echo "Do you want to make this GitHub Repository private? (yes/no)"
+	echo "$public"
+
     echo "Creating Folder $1 in $BaseFolderPath"
 	cd $BaseFolderPath
 	mkdir $1
 	cd $1
 
-	gh repo create 
+	header="{\"name\":\"$1\"}"
+	echo "$header"
+	response=$(curl -H "Authorization: token $token" --data $header https://api.github.com/user/repos --silent --output /dev/null)
+
+	git clone https://github.com/$username/$1.git 
 
 	touch README.md
-	#TODO: Create GitHub Repo
+	touch .gitignore
+	git add README.md
+	git add .gitignore
+	git commit -a -m "Initial commit"
+
+	git push
 fi
 
