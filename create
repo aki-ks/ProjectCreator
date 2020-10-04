@@ -11,20 +11,45 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NOCOLOR='\033[0m'
 
+# Define some variables
+name=""
+description=""
+homepage="" 
+public=true
+
 # Handle given flags
-while test $# -gt 1; do
+while test $# -gt 0; do
   case "$1" in
     -h|--help)
 		echo "Welcome to the help page!"
 		# TODO: Add help overview
         exit 0
         ;;
-	-p|--public)
+	-n)
+		shift
+		name="$1"
+		shift
+		;;
+	-p|--private)
+		public=false
+		shift
+      	;;	
+	-d|--description)
 	  	shift
-		echo "public"
+		description="$1"
+		shift
       	;;
+	--homepage)
+		shift
+		homepage="$1"
+		shift
+		;;	
+	*)
+		name="$1"
+		shift
+		;;
   esac
-done
+done < <(grep PATH /etc/profile)
 
 function printOK {
 	echo -e "[${GREEN}OK${NOCOLOR}] $1"
@@ -61,24 +86,15 @@ else
 	exit 1
 fi
 
-if [ -d "$BaseFolderPath/$1" ] 
+if [ -d "$BaseFolderPath/$name" ] 
 then
-    printError "Directory $BaseFolderPath$1 already exists."
+    printError "Directory $BaseFolderPath$name already exists."
 	echo "Stopping programm..."
 	exit 1 
 fi
 
-echo "Do you want to make this GitHub Repository private? (yes/no)"
-select yn in "Yes" "No"; do
-    case $yn in
-        Yes ) echo "Repository will be private."; public=false; break;;
-        No ) echo "Repository will be public."; public=true; break;;
-    esac
-done
-
-header="{\"name\":\"$1\",\"description\":\"Some message\", \"homepage\":\"https://github.com\", \"private\":true}"
-echo "$header"
-response=$(curl -H "Authorization: token $token" --data $header https://api.github.com/user/repos --silent --output /dev/null --write-out '%{http_code}')
+header="{\"name\":\"$name\", \"description\":\"$description\", \"homepage\":\"$homepage\", \"private\":$public}"
+response=$(curl -H "Authorization: token $token" --data "$header" https://api.github.com/user/repos --silent --output /dev/null --write-out '%{http_code}')
 
 # Check if Login credentials are wrong
 if [ $response -eq 401 ]
@@ -93,7 +109,7 @@ fi
 # Check if a repo with the same name exists already
 if [ $response -eq 422 ]
 then
-	printError "There exists already a repository with the name $1."
+	printError "There exists already a repository with the name $name."
 	echo "Stopping programm..."
 	# TODO: add option to clone this repo or not
 	exit 1
@@ -102,15 +118,24 @@ fi
 # TODO: HTML 400: Repo not found
 # TODO: Alle restlichen HTTP Errors abfangen
 
-
-printOK "Repository created."
+# Check if everything went right 
+if [ $response -eq 201 ]
+then
+	printOK "Repository created."
+else
+	printError "Something went wrong."
+	echo "Stopping programm..."
+	exit 1
+fi
 
 echo "${response}"
-git clone https://github.com/$username/$1.git 
-cd $1
+
+cd $BaseFolderPath
+git clone https://github.com/$username/$name.git 
+cd $name
 touch README.md
 touch .gitignore
 git add README.md
 git add .gitignore
-git commit -a -m "Initial commit"
+git commit -m "Initial commit"
 git push
